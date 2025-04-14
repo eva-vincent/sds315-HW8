@@ -1,0 +1,149 @@
+---
+title: "Homework 7"
+author: "Eva Vincent - emv857"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: hide
+  pdf_document:
+    toc: true
+editor_options:
+  markdown:
+    wrap: sentence
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, tidy=TRUE, tidy.opts=list(width.cutoff=60))
+
+# Import datasets
+creatine <- read.csv("creatinine.csv")
+covid <- read.csv("covid.csv")
+milk <- read.csv("milk.csv")
+
+# Necessary packages
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(mosaic)
+```
+
+# Problem 1
+## Part A
+```{r, include=FALSE}
+crate_model = lm(creatclear ~ age,data=creatine)
+coef(crate_model)
+147.8 - 0.620 * 55
+```
+
+We should expect a creatinine clearance rate of 113.7 mL/minute for a 55 year old. To determine this, I generated a linear regression model and used the regression line equation, y = 147.8 - 0.620x, where x is age and y is the creatinine clearance rate.
+
+## Part B
+The creatinine clearance rate decreases around 0.62 mL/min, on average, per year. I determined this by using the coefficient of my x variable in my regression equation which shows how much the expected creatinine clearance rate should change every year.
+
+## Part C
+```{r, include=FALSE}
+# 40 year old
+147.8 - 0.620 * 40
+135- 123
+
+# 60 year old
+147.8 - 0.620 * 60
+112 - 110.6
+```
+
+The 40 year with a rate of 135 is healthier than the 60 year old for their age. To adjust for age, I calculated the residuals for both individuals by subtracting the expected rate on average from their actual rate. When adjusted for their age, the 40 year old has a rate that is 12 mL/min higher than average and the 60 year old has a rate that is 1.4 mL/min above average for their age. 
+
+# Problem 2
+## Part 1
+```{r, include=FALSE}
+# Filter dataset
+italy <- filter(covid, country == "Italy")
+
+# Check for exponential fit
+ggplot(italy) + 
+  geom_line(aes(x=days_since_first_death, y = deaths))
+ggplot(italy) + 
+  geom_line(aes(x=days_since_first_death, y = log(deaths)))
+
+# linear model for log(deaths) vs days since first death
+lm_italy_covid = lm(log(deaths) ~ days_since_first_death, data=italy)
+coef(lm_italy_covid)
+ggplot(italy) + 
+  geom_line(aes(x=days_since_first_death, y = log(deaths))) + 
+   geom_abline(intercept = 1.02, slope = 0.183218, color='red')
+
+# Doubling time
+70/18.3
+
+# Confidence interval
+boot_italy = do(10000)*lm(log(deaths) ~days_since_first_death, data=resample(italy))
+confint(boot_italy, level = 0.95)
+
+# Doubling time confidence interval
+70/15.96646 # upper
+70/20.77282 # lower
+```
+
+The estimated growth rate for Italy is 0.183 deaths per day with a 95% bootstrapped confidence interval of 0.159 to	0.208. The estimated doubling time is 3.8 days with a 95% bootstrapped confidence interval of 3.4 to 4.4.
+
+## Part 2
+```{r, include=FALSE}
+# Filter dataset
+spain <- filter(covid, country == "Spain")
+
+# Check for exponential fit
+ggplot(spain) + 
+  geom_line(aes(x=days_since_first_death, y = deaths))
+ggplot(spain) + 
+  geom_line(aes(x=days_since_first_death, y = log(deaths)))
+
+# linear model for log(deaths) vs days since first death
+lm_spain_covid = lm(log(deaths) ~ days_since_first_death, data=spain)
+coef(lm_spain_covid)
+ggplot(spain) + 
+  geom_line(aes(x=days_since_first_death, y = log(deaths))) + 
+   geom_abline(intercept = 0.465, slope = 0.2762, color='red')
+
+# Doubling time
+70/27.62
+
+# Confidence interval
+boot_spain = do(10000)*lm(log(deaths) ~days_since_first_death, data=resample(spain))
+confint(boot_spain, level = 0.95)
+
+# Doubling time confidence interval
+70/23.40314 # upper
+70/31.79298 # lower
+```
+
+The estimated growth rate for Spain is 0.276 deaths per day with a 95% bootstrapped confidence interval of 0.234 to 0.318 The estimated doubling time is 2.5 days with a 95% bootstrapped confidence interval of 2.2 to 3.0.
+
+## Part 3
+```{r}
+ggplot(covid)+
+  geom_line(aes(x=days_since_first_death, 
+                y = deaths, 
+                color= country)) +
+  labs(title="Reported Daily COVID Deaths by Country", 
+       x='Days Since First Death',
+       y='Number of Deaths')+
+  theme_minimal()
+```
+
+# Problem 3
+```{r, include=FALSE}
+ggplot(milk) +
+   geom_point(aes(x=price, y=sales))
+
+ggplot(milk) +
+   geom_point(aes(x=log(price), y=log(sales)))
+
+lm_milk = lm(log(sales) ~ log(price), data=milk)
+coef(lm_milk)
+
+boot_milk = do(10000)*lm(log(sales) ~log(price), data=resample(milk))
+confint(boot_milk, level = 0.95)
+```
+
+In light of the data, the estimated price elasticity demand for milk is -1.62, meaning consumers want to buy 1.62% less milk, on average, when the price increases by 1%. The 95% bootstrapped confidence interval for this quantity is -1.772 to -1.454. I first plotted the data on a log-log scale to ensure that the data looked linear and a power law is applicable to the data. I then fit a linear model to the log(sales) versus the log(price) to get the estimated elasticity of -1.62. I then bootstrapped this linear model to obtain my 95% confidence interval.
